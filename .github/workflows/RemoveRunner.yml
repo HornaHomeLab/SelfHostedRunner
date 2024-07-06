@@ -25,4 +25,4 @@ jobs:
         uses: actions/checkout@v4
       - name: Remove runners
         run: | 
-          pwsh ./workflowHelpers/Invoke-RunnerRemoval.ps1
+          pwsh ./workflowHelpers/Invoke-RunnerRemoval.ps1 -OrgName ${{ github.repository_owner }}

@@ -1,4 +1,7 @@
-New-Variable -Name 'CONTAINER_COMMON_NAME' -Value "GH-runner" -Option ReadOnly -Scope Script
+param(
+    [string]$OrgName
+)
+New-Variable -Name 'CONTAINER_COMMON_NAME' -Value "GH-runner-$OrgName" -Option ReadOnly -Scope Script
 
 function Invoke-Main {
     Stop-Containers

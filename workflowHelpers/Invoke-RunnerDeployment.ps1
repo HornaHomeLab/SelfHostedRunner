@@ -20,7 +20,7 @@ function Start-Containers {
             --env ORGANIZATION="$OrgName" `
             --env ACCESS_TOKEN="$AccessToken" `
             --env LABELS="$($Labels.Replace(' ',''))" `
-            --name "$ContainerName" `
+            --name "$ContainerName-$OrgName" `
             $DockerImage
         Write-Host "$ContainerName started (container id: $id)"
     }
