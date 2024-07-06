@@ -1,0 +1,100 @@
+name: Deploy self-hosted runner
+run-name: Deploy self-hoster runner
+
+env:
+  Release_Tar: Latest-Runner.tar.gz
+  Temp_Dir: tempDirForBuild
+  DockerImageName: gh-runner-image
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment_type:
+        description: Select the environment
+        type: choice
+        default: "DEV"
+        required: true
+        options:
+          - DEV
+          - PROD
+      workers_number:
+        description: Number of workers to be deployed
+        type: string
+        default: "2"
+        required: true
+
+jobs:
+  BuildImage:
+    runs-on: ${{ inputs.environment_type == 'DEV' && vars.DEV_RUNNER || vars.PROD_RUNNER }}
+    outputs:
+      image_name_with_tag: ${{ steps.build-image.outputs.img_tag_name }}
+    steps:
+      - name: Create Temp folder
+        run: |
+          if [ -d "${{ env.Temp_Dir }}" ]; then
+            rm -fr "${{ env.Temp_Dir }}"
+          fi
+          mkdir ${{ env.Temp_Dir }}
+          cd "${{ env.Temp_Dir }}"
+      - name: Get latest release details
+        id: latest_release
+        run: |
+          latest_release_details=$(
+            curl -L -s --fail-with-body \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              https://api.github.com/repos/${{ github.repository }}/releases/latest
+            )
+          echo "asset_id=$(
+            echo "$latest_release_details" \
+              | jq .assets[0].id
+            )" >> $GITHUB_OUTPUT
+          echo "tag_name=$(
+            echo "$latest_release_details" | jq .tag_name | tr -d '"'
+          )" >> $GITHUB_OUTPUT
+      - name: Dowload latest asset
+        run: |
+          curl -L -s --fail-with-body \
+            -H "Accept: application/octet-stream" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/${{ github.repository }}/releases/assets/${{ steps.latest_release.outputs.asset_id }} \
+            -o "${{ env.Release_Tar }}"
+      - name: Unpack the archive
+        run: |
+          tar -xzf ${{ env.Release_Tar }}
+      - name: Build Docker image
+        id: build-image
+        run: |
+          echo "img_tag_name=$(
+            echo "${{ env.DockerImageName }}:${{ steps.latest_release.outputs.tag_name }}"
+          )" >> $GITHUB_OUTPUT
+          docker build -t ${{ env.DockerImageName }} .
+          docker tag ${{ env.DockerImageName }} ${{ env.DockerImageName }}:${{ steps.latest_release.outputs.tag_name }}
+      - name: Remove Temp folder
+        run: |
+          cd ..
+          rm -fr ./${{ env.Temp_Dir }}
+
+
+
+  RemoveRunner:
+    uses: ./.github/workflows/RemoveRunner.yml
+    with:
+      environment_type: ${{ inputs.environment_type }}
+
+  RunContainer:
+    runs-on: ${{ inputs.environment_type == 'DEV' && vars.DEV_RUNNER || vars.PROD_RUNNER }}
+    needs: [RemoveRunner, BuildImage]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Start Workers
+        run: |
+          pwsh ./workflowHelpers/Invoke-RunnerDeployment.ps1 \
+            -WorkersNumber ${{ inputs.workers_number }} \
+            -OrgName ${{ github.repository_owner }} \
+            -AccessToken ${{ secrets.PAT }} \
+            -Labels ${{ inputs.environment_type }} \
+            -DockerImage "${{ needs.BuildImage.outputs.image_name_with_tag }}"
