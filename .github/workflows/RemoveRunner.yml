@@ -1,0 +1,28 @@
+name: Remove self-hosted runner
+run-name: Removing self-hosted runner
+on:
+  workflow_dispatch:
+    inputs:
+      environment_type:
+        type: choice
+        description: Select the environment
+        options:
+          - DEV
+          - PROD
+
+  workflow_call:
+    inputs:
+      environment_type:
+        type: string
+        required: true
+
+
+jobs:
+  Remove_Existing_Workers:
+    runs-on: ${{ inputs.environment_type == 'DEV' && vars.DEV_RUNNER || vars.PROD_RUNNER }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Remove runners
+        run: | 
+          pwsh ./workflowHelpers/Invoke-RunnerRemoval.ps1 -OrgName ${{ github.repository_owner }}
