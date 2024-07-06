@@ -89,8 +89,7 @@ jobs:
         run: |
           tar -czf "${{ steps.archive_name.outputs.arch_name }}" \
             Dockerfile \
-            start.sh \
-            stop.sh
+            start.sh 
       - name: Upload archive ${{ steps.archive_name.outputs.arch_name }}
         run: |
           curl -L -s --fail-with-body \
