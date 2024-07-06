@@ -17,7 +17,7 @@ function Start-Containers {
         $ContainerName = "$CONTAINER_COMMON_NAME-$i"
         $id = docker run `
             --detach `
-            --env ORGANIZATION="$OrgName" `
+            --env GITHUB_OBJECT="$OrgName" `
             --env ACCESS_TOKEN="$AccessToken" `
             --env LABELS="$($Labels.Replace(' ',''))" `
             --name "$ContainerName-$OrgName" `
