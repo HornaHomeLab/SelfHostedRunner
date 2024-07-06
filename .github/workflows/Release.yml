@@ -7,7 +7,6 @@ on:
     paths:
       - 'Dockerfile'
       - 'start.sh'
-      - 'stop.sh'
   workflow_dispatch:
 
 permissions: 
