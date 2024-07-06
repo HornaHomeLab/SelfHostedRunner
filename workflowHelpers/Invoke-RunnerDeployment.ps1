@@ -6,7 +6,7 @@ param(
     [string]$DockerImage
 )
 
-New-Variable -Name 'CONTAINER_COMMON_NAME' -Value "GH-runner" -Option ReadOnly -Scope Script
+New-Variable -Name 'CONTAINER_COMMON_NAME' -Value "GH-runner-$OrgName" -Option ReadOnly -Scope Script
 
 function Invoke-Main {
     Start-Containers
@@ -20,7 +20,7 @@ function Start-Containers {
             --env GITHUB_OBJECT="$OrgName" `
             --env ACCESS_TOKEN="$AccessToken" `
             --env LABELS="$($Labels.Replace(' ',''))" `
-            --name "$ContainerName-$OrgName" `
+            --name "$ContainerName" `
             $DockerImage
         Write-Host "$ContainerName started (container id: $id)"
     }
