@@ -1,5 +1,5 @@
 name: Deploy self-hosted runner
-run-name: Deploy self-hoster runner
+run-name: Deploy ${{inputs.workers_number}} self-hoster runners to ${{inputs.environment_type}} environment
 
 env:
   Release_Tar: Latest-Runner.tar.gz
